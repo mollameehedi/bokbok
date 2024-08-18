@@ -3,9 +3,12 @@ import {Grid,TextField,Button,Alert} from '@mui/material';
 import LoadingButton from '@mui/lab/LoadingButton';
 import registrationimg from "../assets/registrationimg.png"
 import google from "../assets/google.png"
+import { getAuth, signInWithEmailAndPassword,GoogleAuthProvider,signInWithPopup } from "firebase/auth";
 import Headingforreglog from '../components/headingforreglog';
 import { Link, useNavigate } from 'react-router-dom';
 import {  toast } from 'react-toastify';
+import { useDispatch } from 'react-redux'
+import { userdata } from '../slices/user/userSlice';
 
 
 
@@ -20,7 +23,10 @@ const Login = () => {
 
   const notify = (msg) => toast(msg);
 
- 
+  const auth = getAuth();
+  const provider = new GoogleAuthProvider();
+  let navigate = useNavigate()
+  let dispatch = useDispatch()
   
 
   let [values,setValues] = useState(initialValues)
@@ -43,11 +49,50 @@ const Login = () => {
       ...values,
       loading: true
     })
- 
+    signInWithEmailAndPassword(auth,email,password).then((user)=>{
+
+      setValues({
+        email: "",
+        password: "",
+        loading: false
+      })
+
+      dispatch(userdata(user.user))
+        localStorage.setItem("user",JSON.stringify(user.user))
+        navigate("/bachal/home")
+
+     
+      // if(!user.user.emailVerified){
+      //   notify("Please varify Email for login")
+      // }else{
+
+      //   dispatch(userdata(user.user))
+      //   localStorage.setItem("user",JSON.stringify(user.user))
+      //   navigate("/bachal/home")
+
+      // }
+
+   
+    }).catch((error) => {
+            const errorCode = error.code;
+            const errorMessage = error.message;
+
+          notify(errorCode)
+          setError(errorCode)
+          setValues({
+            ...values,
+            password: "",
+            loading: false
+          })
+        });
     
   }
 
-
+  let handleGoogleLogin = ()=>{
+    signInWithPopup(auth,provider).then((result) => {
+      console.log(result)
+    })
+  }
 
 
   return (
@@ -57,7 +102,7 @@ const Login = () => {
         <Grid item xs={6}>
           <div className='regContainer'>
             <Headingforreglog className="headingreglog" title="Login to your account!"/>
-            <img className='google' src={google}/>
+            <img onClick={handleGoogleLogin} className='google' src={google}/>
             <div className='regInput'>
                 <TextField value={values.email} onChange={handleValues} name="email" id="outlined-basic" label="Email Address" variant="outlined" />
             </div>
